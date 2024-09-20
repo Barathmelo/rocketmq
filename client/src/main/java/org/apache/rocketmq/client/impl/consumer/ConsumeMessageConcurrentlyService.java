@@ -254,12 +254,14 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
                 if (ackIndex >= consumeRequest.getMsgs().size()) {
                     ackIndex = consumeRequest.getMsgs().size() - 1;
                 }
+                // 将截止至ackIndex的消息置为消费成功，后续消费从ackIndex之后重新消费
                 int ok = ackIndex + 1;
                 int failed = consumeRequest.getMsgs().size() - ok;
                 this.getConsumerStatsManager().incConsumeOKTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), ok);
                 this.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), failed);
                 break;
             case RECONSUME_LATER:
+                // 全批次默认都未消费成功，全部从头重新消费
                 ackIndex = -1;
                 this.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(),
                     consumeRequest.getMsgs().size());
@@ -286,6 +288,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
                             msg.getQueueId(), msg.getQueueOffset());
                         continue;
                     }
+                    // 将消息发送至重试队列中，topic拼接前缀 %RETRY%
                     boolean result = this.sendMessageBack(msg, context);
                     if (!result) {
                         msg.setReconsumeTimes(msg.getReconsumeTimes() + 1);

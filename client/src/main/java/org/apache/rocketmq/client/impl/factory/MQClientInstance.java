@@ -142,6 +142,7 @@ public class MQClientInstance {
         this.nettyClientConfig.setUseTLS(clientConfig.isUseTLS());
         this.nettyClientConfig.setSocksProxyConfig(clientConfig.getSocksProxyConfig());
         ClientRemotingProcessor clientRemotingProcessor = new ClientRemotingProcessor(this);
+        // 内部创建了一个netty客户端NettyRemotingClient
         this.mQClientAPIImpl = new MQClientAPIImpl(this.nettyClientConfig, clientRemotingProcessor, rpcHook, clientConfig);
 
         if (this.clientConfig.getNamesrvAddr() != null) {
@@ -268,6 +269,8 @@ public class MQClientInstance {
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
                     log.info("the client factory [{}] start OK", this.clientId);
                     this.serviceState = ServiceState.RUNNING;
+                    Map<Integer, String> map = new HashMap<>();
+                    map.remove(1);
                     break;
                 case START_FAILED:
                     throw new MQClientException("The Factory object[" + this.getClientId() + "] has been created before, and failed.", null);

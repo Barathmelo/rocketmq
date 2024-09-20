@@ -209,15 +209,22 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             case CREATE_JUST:
                 this.serviceState = ServiceState.START_FAILED;
 
+                // 0. 检查配置
                 this.checkConfig();
 
+                // 这个操作是啥意思？
                 if (!this.defaultMQProducer.getProducerGroup().equals(MixAll.CLIENT_INNER_PRODUCER_GROUP)) {
                     this.defaultMQProducer.changeInstanceNameToPID();
                 }
 
+                // 1. 获取or创建消息队列客户端实例MQClientInstance
+                // MQClientManager为单例，其内部维护了一个映射容器 ConcurrentMap<String/* clientId */, MQClientInstance>
                 this.mQClientFactory = MQClientManager.getInstance().getOrCreateMQClientInstance(this.defaultMQProducer, rpcHook);
 
+                // 2. 将此消费者注册到客户端实例MQClientInstance中的producerTable，key为producerGroup，value为producerImpl
                 boolean registerOK = mQClientFactory.registerProducer(this.defaultMQProducer.getProducerGroup(), this);
+                // 如果此producer之前已经注册过则会返回false
+                // 这里抛异常了会怎样？
                 if (!registerOK) {
                     this.serviceState = ServiceState.CREATE_JUST;
                     throw new MQClientException("The producer group[" + this.defaultMQProducer.getProducerGroup()
@@ -225,8 +232,11 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         null);
                 }
 
+                // 3. 新建PublishInfo信息
+                // 这个publishInfo有什么用？
                 this.topicPublishInfoTable.put(this.defaultMQProducer.getCreateTopicKey(), new TopicPublishInfo());
 
+                // 4. 启动MQ
                 if (startFactory) {
                     mQClientFactory.start();
                 }
@@ -246,6 +256,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 break;
         }
 
+        // 5. 向所有Broker发送心跳
         this.mQClientFactory.sendHeartbeatToAllBrokerWithLock();
 
         RequestFutureHolder.getInstance().startScheduledTask(this);
