@@ -45,6 +45,7 @@ public class ProcessQueue {
     private final static long PULL_MAX_IDLE_TIME = Long.parseLong(System.getProperty("rocketmq.client.pull.pullMaxIdleTime", "120000"));
     private final Logger log = LoggerFactory.getLogger(ProcessQueue.class);
     private final ReadWriteLock treeMapLock = new ReentrantReadWriteLock();
+    // 存储待处理消息队列
     private final TreeMap<Long, MessageExt> msgTreeMap = new TreeMap<>();
     private final AtomicLong msgCount = new AtomicLong();
     private final AtomicLong msgSize = new AtomicLong();
